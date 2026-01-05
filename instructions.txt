@@ -1,0 +1,724 @@
+# Fine-Tuning Dataset Builder - Implementation Instructions
+
+## Project Overview
+An agentic system that generates, identifies, and curates high-quality datasets for fine-tuning LLMs. The system supports multiple LLM providers (OpenAI, Anthropic, Google, Mistral, Meta Llama) and intelligently creates datasets that comply with each provider's specific formatting requirements and token limitations.
+
+## Target User
+Data scientists, ML engineers, and AI developers who need to create fine-tuning datasets efficiently without manually formatting hundreds of examples.
+
+## Core Problem Being Solved
+1. Manual dataset creation is time-consuming and error-prone
+2. Different LLM providers have different format requirements (JSONL variations)
+3. Token limits vary wildly between providers (4K to 128K+)
+4. Quality control is difficult without proper tooling
+5. Balancing dataset distribution across topics/sources is tedious
+
+---
+
+## System Architecture
+
+### Directory Structure
+```
+fine-tune-dataset-builder/
+├── .env                          # User's API keys (gitignored)
+├── .env.example                  # Template for API configuration
+├── .gitignore                    # Standard Python gitignore
+├── requirements.txt              # Python dependencies
+├── config.yaml                   # Dataset generation configuration
+├── Makefile                      # Make commands for convenience
+├── CLAUDE.md                     # Navigation guide for Claude Code
+├── instructions.txt              # This file
+├── README.md                     # User-facing documentation
+│
+├── input_files/                  # User uploads source files here
+│   └── .gitkeep
+│
+├── output_datasets/              # Generated datasets saved here
+│   └── .gitkeep
+│
+├── prompts/                      # System and agent prompts
+│   ├── system/                   # Core agent prompts
+│   │   ├── create_mode.txt      # Prompt for create mode agent
+│   │   ├── identify_mode.txt    # Prompt for identify mode agent
+│   │   └── hybrid_mode.txt      # Prompt for hybrid mode agent
+│   └── free_mode/               # User customization
+│       ├── prompt.txt           # Optional user override prompt
+│       └── README.md            # Instructions for free mode
+│
+├── memory/                       # SQLite database location
+│   └── .gitkeep
+│
+├── context_files/                # Reference documents
+│   ├── recruiter_instructions.pdf
+│   └── fine_tunable_llms_research.md
+│
+└── src/
+    ├── __init__.py
+    ├── main.py                   # CLI entry point
+    │
+    ├── agents/                   # AI agent implementations
+    │   ├── __init__.py
+    │   ├── base_agent.py        # Abstract base agent class
+    │   ├── create_agent.py      # Generate synthetic conversations
+    │   ├── identify_agent.py    # Extract existing conversations
+    │   ├── hybrid_agent.py      # Combination of both
+    │   └── free_agent.py        # User-defined behavior
+    │
+    ├── providers/                # LLM provider integrations
+    │   ├── __init__.py
+    │   ├── base_provider.py     # Abstract provider interface
+    │   ├── openai_provider.py   # OpenAI GPT models
+    │   ├── anthropic_provider.py # Claude models
+    │   ├── google_provider.py   # Gemini models
+    │   ├── mistral_provider.py  # Mistral models
+    │   └── llama_provider.py    # Meta Llama models
+    │
+    ├── utils/                    # Helper utilities
+    │   ├── __init__.py
+    │   ├── file_processor.py    # Extract text from various formats
+    │   ├── token_counter.py     # Count tokens per provider
+    │   ├── validator.py         # Validate datasets against limits
+    │   ├── formatter.py         # Format to provider-specific JSONL
+    │   ├── splitter.py          # Train/validation splitting logic
+    │   └── conversation_detector.py # Identify Q&A patterns
+    │
+    ├── persistence/              # Data persistence layer
+    │   ├── __init__.py
+    │   ├── sqlite_client.py     # SQLite database client
+    │   └── models.py            # Data models for persistence
+    │
+    └── cli/                      # CLI interface
+        ├── __init__.py
+        ├── menu.py              # Menu system
+        └── prompts.py           # User input prompts
+
+```
+
+---
+
+## Implementation Phases
+
+### Phase 1: Foundation & Configuration
+**Goal:** Set up project structure, configuration management, and basic utilities
+
+**Tasks:**
+1. Create directory structure with all folders
+2. Implement config.yaml parser with validation
+3. Implement .env loader with validation
+4. Create .env.example with all provider placeholders
+5. Build file_processor.py to extract text from PDF, DOCX, TXT, CSV, XLSX, PPTX
+6. Implement token_counter.py using tiktoken (with provider-specific logic)
+7. Create conversation_detector.py with regex patterns and AI fallback
+
+**Deliverables:**
+- Working config system
+- File ingestion working for all formats
+- Token counting accurate per provider
+
+**Testing:**
+- Load sample files from input_files/
+- Count tokens accurately
+- Detect conversations in sample documents
+
+---
+
+### Phase 2: Provider Integrations
+**Goal:** Implement LLM provider interfaces with format specifications
+
+**Tasks:**
+1. Create base_provider.py abstract class with methods:
+   - `get_models()` - list available models
+   - `get_token_limit(model)` - return token limit
+   - `get_max_training_tokens(model)` - return max training tokens
+   - `format_example(example)` - format to provider JSONL
+   - `validate_dataset(dataset)` - check compliance
+   
+2. Implement each provider with hardcoded limits from research doc:
+   - OpenAI: GPT-4o, GPT-4o mini, GPT-4.1, GPT-3.5-turbo
+   - Anthropic: Claude 3 Haiku (Bedrock only note)
+   - Google: Gemini 2.5 Pro, Flash, Flash-lite
+   - Mistral: Mistral 7B, Large v2, Nemo, Mixtral 8x7B
+   - Llama: Llama 3.1 (8B, 70B, 405B)
+
+3. Each provider should include:
+   - Format templates
+   - Token limits per model
+   - Validation rules
+   - Example formatting
+
+**Deliverables:**
+- All 5 providers implemented
+- Format conversion working
+- Validation logic complete
+
+**Testing:**
+- Create sample dataset
+- Format for each provider
+- Validate token limits
+
+---
+
+### Phase 3: Agent System
+**Goal:** Implement intelligent agents for dataset generation
+
+**Tasks:**
+1. Create base_agent.py with:
+   - LLM client initialization
+   - Prompt template loading
+   - Token budget management
+   - Error handling
+
+2. Implement create_agent.py:
+   - Load inspiration files
+   - Generate synthetic conversations using LLM
+   - Ensure variety and quality
+   - Track token usage
+   - Generate metadata (topic keywords)
+
+3. Implement identify_agent.py:
+   - Use conversation_detector to find Q&A patterns
+   - Extract conversations verbatim (no LLM modification)
+   - Preserve source attribution
+   - Generate metadata
+
+4. Implement hybrid_agent.py:
+   - Combine both approaches
+   - Balance extraction vs generation
+   - Avoid duplication
+   - Ensure coherent dataset
+
+5. Implement free_agent.py:
+   - Check for prompts/free_mode/prompt.txt
+   - If exists, use file content
+   - If not, prompt user for instructions
+   - Execute user-defined behavior
+
+**Deliverables:**
+- All 4 agent modes working
+- Quality synthetic data generation
+- Accurate conversation extraction
+
+**Testing:**
+- Run each mode with sample inputs
+- Verify output quality
+- Check metadata accuracy
+
+---
+
+### Phase 4: SQLite Integration & Metadata
+**Goal:** Persist dataset metadata and enable CSV export
+
+**Tasks:**
+1. Set up SQLite database:
+   - Initialize database in memory/dataset_builder.db
+   - Create tables schema:
+     ```sql
+     CREATE TABLE IF NOT EXISTS datasets (
+       id TEXT PRIMARY KEY,
+       name TEXT NOT NULL,
+       provider TEXT NOT NULL,
+       model TEXT NOT NULL,
+       mode TEXT NOT NULL,
+       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+       total_samples INTEGER,
+       total_tokens INTEGER,
+       config TEXT  -- JSON string of configuration
+     );
+     
+     CREATE TABLE IF NOT EXISTS samples (
+       id TEXT PRIMARY KEY,
+       dataset_id TEXT REFERENCES datasets(id),
+       content TEXT NOT NULL,
+       token_length INTEGER,
+       topic_keywords TEXT,  -- Comma-separated
+       source_file TEXT,
+       split TEXT,  -- 'train' or 'validation'
+       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+     );
+     
+     CREATE INDEX idx_dataset_id ON samples(dataset_id);
+     CREATE INDEX idx_split ON samples(split);
+     ```
+
+2. Implement persistence layer:
+   - Create sqlite_client.py with connection management
+   - Save dataset configuration
+   - Save individual samples with metadata
+   - Query samples by dataset
+   - Export to CSV
+   - Automatic backup functionality
+
+3. Create CSV exporter:
+   - Columns: sample_id, content_preview, token_length, topic_keywords, source_file, split
+   - Export alongside JSONL dataset
+
+**Deliverables:**
+- SQLite integration working
+- All metadata persisted
+- CSV export functional
+- Automatic database backups
+
+**Testing:**
+- Create test dataset
+- Verify SQLite storage
+- Export CSV and validate
+- Test backup functionality
+
+---
+
+### Phase 5: Validation & Splitting
+**Goal:** Ensure datasets comply with provider limits and support train/validation splits
+
+**Tasks:**
+1. Implement validator.py:
+   - Check total token count vs provider max
+   - Validate individual example tokens vs limit
+   - Ensure format compliance
+   - Warn about truncation risks
+   - Provide detailed error messages
+
+2. Implement splitter.py:
+   - Support configurable ratios (90-10, 80-20, 70-30, custom)
+   - Two distribution strategies:
+     a) **Uniform random**: Random split across all samples
+     b) **Weighted by metadata**: Equal distribution per source file or keyword
+   - Preserve metadata in splits
+   - Generate separate JSONL files for train/validation
+
+3. Add user interaction:
+   - Ask if user wants train/validation split
+   - If yes, show current dataset distribution (by source, by keywords)
+   - Ask for split ratio
+   - Ask for distribution strategy
+   - Execute split and show summary
+
+**Deliverables:**
+- Validation working for all providers
+- Smart splitting with multiple strategies
+- Clear user feedback on splits
+
+**Testing:**
+- Test with datasets exceeding limits
+- Verify weighted splitting accuracy
+- Test all split ratios
+
+---
+
+### Phase 6: CLI Interface
+**Goal:** Create intuitive menu-driven CLI for all functionality
+
+**Tasks:**
+1. Implement menu.py with menu system:
+   ```
+   === Fine-Tuning Dataset Builder ===
+   
+   1. Configure Dataset
+      - Select LLM Provider
+      - Select Model
+      - Select Generation Mode
+      - Set Dataset Size
+      - Configure Train/Val Split
+   
+   2. Generate Dataset
+      - Process Input Files
+      - Run Selected Agent
+      - Validate Output
+      - Save Dataset
+   
+   3. View Dataset Statistics
+      - Token counts
+      - Sample distribution
+      - Source breakdown
+   
+   4. Export Dataset
+      - Export JSONL
+      - Export CSV metadata
+   
+   5. Settings
+      - Edit config.yaml
+      - View current configuration
+   
+   6. Exit
+   ```
+
+2. Implement prompts.py for user inputs:
+   - Provider selection (numbered list)
+   - Model selection (dynamic based on provider)
+   - Mode selection (1-4 with descriptions)
+   - Size input (with validation)
+   - Split configuration
+   - Free mode instructions
+
+3. Add colorama for better UX:
+   - Color-coded messages (success=green, warning=yellow, error=red)
+   - Progress indicators with tqdm
+   - Clear status updates
+
+**Deliverables:**
+- Fully functional CLI
+- Intuitive navigation
+- Clear error messages
+- Good user experience
+
+**Testing:**
+- Navigate full workflow
+- Test all menu options
+- Verify error handling
+
+---
+
+### Phase 7: Integration & Polish
+**Goal:** Connect all components and ensure smooth operation
+
+**Tasks:**
+1. Create main.py orchestrator:
+   - Initialize all components
+   - Coordinate agent → validator → splitter → persistence → export
+   - Handle errors gracefully
+   - Provide clear progress updates
+
+2. Add comprehensive error handling:
+   - File not found errors
+   - API errors (rate limits, auth failures)
+   - Format errors
+   - Token limit exceeded errors
+   - Database errors
+
+3. Create README.md:
+   - Quick start guide
+   - Configuration instructions
+   - Usage examples
+   - Troubleshooting
+   - Provider setup guides
+
+4. Testing & validation:
+   - End-to-end test for each mode
+   - Test all providers
+   - Test edge cases (empty files, huge files, corrupted files)
+   - Test split strategies
+
+**Deliverables:**
+- Fully integrated system
+- Comprehensive documentation
+- Robust error handling
+
+**Testing:**
+- Complete workflow for each mode
+- Test with various file types
+- Stress test with large datasets
+
+---
+
+## Configuration Schema (config.yaml)
+
+```yaml
+# LLM Provider Configuration
+provider: "google"  # Options: openai, anthropic, google, mistral, llama
+model: "gemini-2.5-flash"  # Must match provider's available models
+
+# Generation Mode
+mode: "create"  # Options: create, identify, hybrid, free
+
+# Dataset Parameters
+dataset_size: 100  # Desired number of samples (system caps at provider max)
+output_name: "my_dataset"  # Base name for output files
+
+# Train/Validation Split
+split:
+  enabled: true
+  ratio: 0.8  # 80% train, 20% validation
+  strategy: "weighted"  # Options: random, weighted
+  weight_by: "source"  # Options: source, keywords (only if strategy=weighted)
+
+# Agent Configuration
+agent:
+  # For create mode
+  create:
+    temperature: 0.7
+    variety: "high"  # Options: low, medium, high
+    
+  # For identify mode
+  identify:
+    min_turns: 2  # Minimum conversation turns to extract
+    include_context: true  # Include surrounding context
+    
+  # For hybrid mode
+  hybrid:
+    generation_ratio: 0.5  # 50% generated, 50% identified
+    
+  # For free mode
+  free:
+    use_prompt_file: true  # If false, prompt user interactively
+
+# Output Configuration
+output:
+  format: "jsonl"  # Always JSONL for fine-tuning
+  include_csv: true  # Also export CSV metadata
+  include_stats: true  # Generate statistics file
+
+# System Configuration
+system:
+  agentic_llm: "google"  # LLM provider for the agent system itself
+  agentic_model: "gemini-2.0-flash-exp"  # Free tier model for agents
+  max_retries: 3
+  timeout: 60
+```
+
+---
+
+## Environment Variables (.env.example)
+
+```bash
+# === LLM Provider API Keys ===
+# You only need to configure the provider you plan to use
+
+# OpenAI (Paid)
+OPENAI_API_KEY=sk-your-api-key-here
+
+# Anthropic Claude (Paid)
+ANTHROPIC_API_KEY=sk-ant-your-api-key-here
+
+# Google Gemini (FREE TIER AVAILABLE)
+GOOGLE_API_KEY=your-google-api-key-here
+
+# Mistral (FREE TIER AVAILABLE via OpenRouter)
+MISTRAL_API_KEY=your-mistral-api-key-here
+
+# Meta Llama (FREE via multiple providers)
+# Can use through OpenRouter, Together AI, or Hugging Face
+LLAMA_API_KEY=your-llama-api-key-here
+
+# === Supabase (FREE TIER) ===
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_KEY=your-supabase-anon-key
+
+# === Agent System LLM ===
+# Which provider powers the agentic system itself
+# Recommendation: Use free tier (Gemini) unless you have paid access
+AGENT_PROVIDER=google
+AGENT_MODEL=gemini-2.0-flash-exp
+```
+
+---
+
+## Key Implementation Details
+
+### 1. Conversation Detection Logic
+The identify_agent uses a multi-stage approach:
+
+```python
+# Stage 1: Pattern matching (fast, deterministic)
+patterns = [
+    r'Q:\s*.+?\n+A:\s*.+',  # Q&A format
+    r'User:\s*.+?\n+Assistant:\s*.+',  # Chat format
+    r'\*\*Question\*\*:.+?\n+\*\*Answer\*\*:.+',  # Markdown
+    r'\d+\.\s*.+?\n+[A-Z]\)\s*.+',  # Numbered Q&A
+]
+
+# Stage 2: AI-powered detection (for ambiguous cases)
+# Use agentic LLM to identify conversational exchanges
+# Extract verbatim without modification
+```
+
+### 2. Token Counting Strategy
+Different providers use different tokenizers:
+
+```python
+def count_tokens(text, provider, model):
+    if provider == "openai":
+        encoding = tiktoken.encoding_for_model(model)
+        return len(encoding.encode(text))
+    elif provider == "anthropic":
+        # Claude uses ~4 chars per token approximation
+        return len(text) // 4
+    elif provider == "google":
+        # Gemini tokenizer (use their API)
+        return gemini_count_tokens(text)
+    # ... etc
+```
+
+### 3. Dataset Size Validation
+```python
+def validate_dataset_size(desired_size, provider, model):
+    """Ensure dataset fits within provider limits"""
+    limits = PROVIDER_LIMITS[provider][model]
+    
+    max_samples = limits['max_training_tokens'] // limits['tokens_per_example']
+    
+    if desired_size > max_samples:
+        print(f"⚠️  Desired size ({desired_size}) exceeds {provider} {model} "
+              f"limit ({max_samples} samples).")
+        print(f"✓ Using maximum: {max_samples} samples")
+        return max_samples
+    
+    return desired_size
+```
+
+### 4. Weighted Splitting
+```python
+def weighted_split(samples, ratio, weight_by):
+    """Split dataset with equal representation per source/keyword"""
+    if weight_by == "source":
+        groups = group_by(samples, lambda s: s.source_file)
+    elif weight_by == "keywords":
+        groups = group_by(samples, lambda s: s.topic_keywords[0])
+    
+    train, val = [], []
+    for group in groups:
+        split_idx = int(len(group) * ratio)
+        train.extend(group[:split_idx])
+        val.extend(group[split_idx:])
+    
+    return train, val
+```
+
+---
+
+## Success Criteria
+
+### Must-Have (MVP)
+- [x] All 4 generation modes working
+- [x] All 5 provider integrations complete
+- [x] File processing for all formats (PDF, DOCX, TXT, CSV, XLSX, PPTX)
+- [x] Token validation per provider
+- [x] Supabase persistence
+- [x] CSV export with metadata
+- [x] Train/validation splitting
+- [x] CLI menu system
+- [x] Config.yaml management
+- [x] .env security
+
+### Nice-to-Have (Future)
+- [ ] Web UI (planned for future)
+- [ ] Dataset editing tools
+- [ ] Dataset cleaning utilities
+- [ ] Dataset versioning
+- [ ] A/B testing different generation strategies
+- [ ] Integration with fine-tuning APIs
+- [ ] Automated quality scoring
+
+---
+
+## Testing Strategy
+
+### Unit Tests
+- Token counting accuracy
+- File processing for each format
+- Conversation detection patterns
+- Provider format conversion
+- Split distribution
+
+### Integration Tests
+- End-to-end dataset generation
+- Supabase CRUD operations
+- CLI navigation
+- Error handling
+
+### Manual Testing
+- Test with real documents
+- Verify output quality
+- Test edge cases (empty files, massive files)
+- Test all provider/model combinations
+
+---
+
+## Development Guidelines
+
+### Code Style
+- Follow PEP 8
+- Use type hints
+- Docstrings for all public methods
+- Clear variable names
+- Keep functions small and focused
+
+### Error Handling
+- Never crash silently
+- Provide actionable error messages
+- Log errors for debugging
+- Graceful degradation where possible
+
+### Security
+- Never commit .env file
+- Use environment variables for all secrets
+- Validate all user inputs
+- Sanitize file paths
+
+### Performance
+- Stream large files
+- Use batch processing where possible
+- Cache provider limits (don't fetch repeatedly)
+- Async operations where beneficial
+
+---
+
+## Future Expansion Roadmap
+
+### Phase 8: Web UI (Post-MVP)
+- React/Next.js frontend
+- File upload interface
+- Visual dataset builder
+- Real-time progress tracking
+- Dataset preview
+
+### Phase 9: Dataset Utilities (Post-MVP)
+- Deduplication
+- Quality scoring
+- Topic clustering
+- Example editing
+- Merging datasets
+
+### Phase 10: Advanced Features (Future)
+- Active learning (iterative refinement)
+- Multi-provider ensemble generation
+- Automated hyperparameter tuning
+- Integration with fine-tuning platforms
+- Cost optimization tools
+
+---
+
+## Support Resources
+
+### Documentation to Reference
+- OpenAI Fine-tuning: https://platform.openai.com/docs/guides/fine-tuning
+- Anthropic/Bedrock: https://docs.aws.amazon.com/bedrock/latest/userguide/model-customization.html
+- Google Vertex AI: https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini-supervised-tuning
+- Mistral: https://docs.mistral.ai/capabilities/finetuning
+- Meta Llama: https://llama.meta.com/docs
+
+### Libraries to Use
+- `anthropic`: Claude API client
+- `google-generativeai`: Gemini API client
+- `openai`: OpenAI API client (works with OpenRouter)
+- `sqlite3`: Built-in Python database (no installation needed)
+- `tiktoken`: Token counting
+- `click`: CLI framework (optional, can use raw input())
+- `colorama`: Terminal colors
+- `tqdm`: Progress bars
+
+---
+
+## Quick Start Checklist for Claude Code
+
+1. [ ] Create directory structure
+2. [ ] Copy requirements.txt, this file, and CLAUDE.md to project root
+3. [ ] Create .env.example
+4. [ ] Create config.yaml with defaults
+5. [ ] Implement file_processor.py
+6. [ ] Implement provider integrations (start with Google/free tier)
+7. [ ] Implement base_agent.py
+8. [ ] Implement create_agent.py (simplest to start)
+9. [ ] Implement CLI menu
+10. [ ] Test end-to-end with sample files
+11. [ ] Implement remaining agents
+12. [ ] Add SQLite integration
+13. [ ] Add validation and splitting
+14. [ ] Polish UX and error handling
+
+---
+
+## Contact & Support
+For questions about implementation: Reference this document and CLAUDE.md
+For questions about requirements: Contact your hiring manager
+For technical issues: Check the research doc and provider documentation
+
+Good luck! 🚀

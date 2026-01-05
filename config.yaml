@@ -1,0 +1,247 @@
+# ============================================
+# Fine-Tuning Dataset Builder Configuration
+# ============================================
+
+# === LLM PROVIDER CONFIGURATION ===
+# Which provider and model to use for fine-tuning dataset
+# Provider options: openai, anthropic, google, mistral, llama
+provider: "google"
+
+# Model must match the provider's available models
+# Google options: gemini-2.5-pro, gemini-2.5-flash, gemini-2.5-flash-lite
+# OpenAI options: gpt-4o, gpt-4o-mini, gpt-4.1, gpt-4.1-mini, gpt-3.5-turbo
+# Anthropic options: claude-3-haiku (Bedrock only)
+# Mistral options: mistral-7b, mistral-large-v2, mistral-nemo, mixtral-8x7b
+# Llama options: llama-3.1-8b, llama-3.1-70b, llama-3.1-405b
+model: "gemini-2.5-flash"
+
+# === GENERATION MODE ===
+# Options: create, identify, hybrid, free
+# - create: Generate synthetic conversations from source files
+# - identify: Extract existing conversations verbatim
+# - hybrid: Combination of both approaches
+# - free: User-defined behavior (custom prompts)
+mode: "create"
+
+# === DATASET PARAMETERS ===
+dataset:
+  # Desired number of training examples
+  # System will cap this at provider's maximum limit
+  size: 100
+  
+  # Base name for output files
+  # Will generate: {output_name}.jsonl, {output_name}_metadata.csv
+  output_name: "my_dataset"
+  
+  # Minimum quality threshold (1-10 scale)
+  # Samples below this will be rejected (if quality scoring is enabled)
+  min_quality: 7
+
+# === TRAIN/VALIDATION SPLIT ===
+split:
+  # Enable train/validation splitting
+  enabled: true
+  
+  # Split ratio (0.0 - 1.0)
+  # 0.8 = 80% train, 20% validation
+  # Common values: 0.9 (90/10), 0.8 (80/20), 0.7 (70/30)
+  ratio: 0.8
+  
+  # Distribution strategy
+  # - random: Random split across all samples
+  # - weighted: Equal distribution per category
+  strategy: "weighted"
+  
+  # What to weight by (only used if strategy=weighted)
+  # - source: Equal representation from each source file
+  # - keywords: Equal representation from each topic keyword
+  weight_by: "source"
+
+# === AGENT CONFIGURATION ===
+agent:
+  # CREATE MODE settings
+  create:
+    # Temperature for generation (0.0 - 1.0)
+    # Higher = more creative, Lower = more conservative
+    temperature: 0.7
+    
+    # Variety level: low, medium, high
+    # Affects how diverse the generated examples are
+    variety: "high"
+    
+    # Topics to focus on (optional, empty = use all from source)
+    focus_topics: []
+    
+    # Conversation length preference
+    # Options: short (2-3 turns), medium (4-6 turns), long (7+ turns)
+    length: "medium"
+  
+  # IDENTIFY MODE settings
+  identify:
+    # Minimum conversation turns to extract
+    # 2 = at least one exchange (Q&A)
+    min_turns: 2
+    
+    # Include surrounding context in extraction
+    # If true, includes paragraphs before/after conversation
+    include_context: true
+    
+    # Maximum context paragraphs to include
+    max_context_paragraphs: 2
+    
+    # Confidence threshold for AI detection (0.0 - 1.0)
+    # Only extract if AI is confident this is a conversation
+    confidence_threshold: 0.8
+  
+  # HYBRID MODE settings
+  hybrid:
+    # Ratio of generated vs extracted examples (0.0 - 1.0)
+    # 0.5 = 50% generated, 50% extracted
+    generation_ratio: 0.5
+    
+    # Ensure no duplicates between generated and extracted
+    deduplicate: true
+  
+  # FREE MODE settings
+  free:
+    # Use prompt file instead of interactive prompting
+    # If true, reads from prompts/free_mode/prompt.txt
+    # If false, prompts user interactively
+    use_prompt_file: true
+    
+    # Allow advanced customization
+    # Enables experimental features and complex workflows
+    allow_advanced: true
+
+# === OUTPUT CONFIGURATION ===
+output:
+  # Always JSONL for fine-tuning
+  format: "jsonl"
+  
+  # Also export CSV metadata file
+  # Includes: sample_id, content_preview, token_length, topic_keywords, source_file, split
+  include_csv: true
+  
+  # Generate statistics file
+  # Summary of dataset: total samples, avg tokens, topic distribution, etc.
+  include_stats: true
+  
+  # Pretty print JSONL (each object on single line but formatted)
+  # WARNING: May increase file size significantly
+  pretty_print: false
+  
+  # Validate output before saving
+  # Ensures all samples comply with provider requirements
+  validate_before_save: true
+
+# === SYSTEM CONFIGURATION ===
+system:
+  # Which LLM provider powers the agentic system itself
+  # Options: google, openai, anthropic, mistral, llama
+  # Recommendation: Use free tier (google) for cost-efficiency
+  agentic_llm: "google"
+  
+  # Which model for the agentic system
+  # Should be fast and cost-effective
+  agentic_model: "gemini-2.0-flash-exp"
+  
+  # Maximum retries for API calls
+  max_retries: 3
+  
+  # Timeout for API calls (seconds)
+  timeout: 60
+  
+  # Enable verbose logging
+  verbose: false
+  
+  # Enable debug mode (even more detailed logs)
+  debug: false
+  
+  # Batch size for processing files
+  # Process this many files at a time
+  batch_size: 10
+  
+  # Maximum concurrent API requests
+  max_concurrent: 5
+
+# === FILE PROCESSING ===
+files:
+  # Supported input formats
+  # Automatically detected based on extension
+  supported_formats:
+    - pdf
+    - docx
+    - txt
+    - csv
+    - xlsx
+    - pptx
+    - md
+    - html
+  
+  # Maximum file size (MB)
+  # Files larger than this will be skipped with warning
+  max_size_mb: 50
+  
+  # Skip empty files
+  skip_empty: true
+  
+  # Character encoding for text files
+  encoding: "utf-8"
+
+# === PERSISTENCE ===
+persistence:
+  # Database file location
+  # SQLite database file (created automatically)
+  database_path: "memory/dataset_builder.db"
+  
+  # Keep history of all dataset generations
+  keep_history: true
+  
+  # Automatically backup database
+  auto_backup: true
+  
+  # Backup directory
+  backup_dir: "memory/backups"
+  
+  # Maximum number of backups to keep
+  max_backups: 10
+
+# ============================================
+# NOTES
+# ============================================
+#
+# - Edit this file to customize dataset generation
+# - Invalid values will be rejected with clear error messages
+# - See instructions.txt for detailed explanations
+# - Use CLAUDE.md for navigating the codebase
+#
+# ============================================
+# QUICK START PRESETS
+# ============================================
+#
+# PRESET 1: Maximum Quality (Slower, Better Results)
+# provider: openai
+# model: gpt-4.1
+# mode: hybrid
+# dataset.size: 200
+# split.ratio: 0.9
+# agent.create.temperature: 0.3
+# agent.create.variety: medium
+#
+# PRESET 2: Fast & Free (Faster, Good Results)
+# provider: google
+# model: gemini-2.5-flash
+# mode: create
+# dataset.size: 100
+# split.ratio: 0.8
+# agent.create.temperature: 0.7
+# agent.create.variety: high
+#
+# PRESET 3: Extract Only (Preserve Originals)
+# mode: identify
+# dataset.size: 500
+# split.strategy: weighted
+# split.weight_by: source
+# agent.identify.min_turns: 3
+#
+# ============================================

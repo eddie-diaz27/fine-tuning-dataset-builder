@@ -1,0 +1,131 @@
+# INITIAL PROMPT FOR CLAUDE CODE
+# Copy and paste this entire prompt to start the implementation
+
+---
+
+Hi Claude! I need your help building an agentic system for generating fine-tuning datasets. I've prepared comprehensive documentation for you to reference.
+
+## 📚 Context Files Available
+
+You have access to the following files in the `context_files/` subdirectory:
+
+1. **recruiter_instructions.pdf** - Guidelines for building an agentic system (technical requirements, best practices)
+2. **fine_tunable_llms_research.md** - Detailed research on the top 5 fine-tunable LLM providers, their data formats, and token limitations
+
+## 📋 Project Documentation Created
+
+I've already created three founding documents for you:
+
+1. **requirements.txt** - All Python dependencies needed
+2. **instructions.txt** - Comprehensive implementation plan with phases, architecture, and detailed tasks
+3. **CLAUDE.md** - Navigation guide to help you understand the project structure and current state
+
+## 🎯 Your Mission
+
+Build a Python-based agentic system that:
+- Generates high-quality fine-tuning datasets for LLMs
+- Supports 5 providers: OpenAI, Anthropic, Google, Mistral, Meta Llama
+- Has 4 modes: create, identify, hybrid, and free
+- Uses free-tier APIs (Gemini) by default with local SQLite database
+- Validates datasets against provider-specific token limits
+- Provides train/validation splitting with weighted distribution
+- Exports JSONL + CSV metadata
+
+## 🚀 Getting Started
+
+**Please begin by:**
+
+1. **Reading the documentation**: 
+   - Start with `CLAUDE.md` for overall project understanding
+   - Then read `instructions.txt` for detailed implementation plan
+   - Reference `context_files/fine_tunable_llms_research.md` for provider specifications
+   - Reference `context_files/recruiter_instructions.pdf` for agentic best practices
+
+2. **Set up the project structure**:
+   - Create all directories as outlined in `instructions.txt`
+   - Set up the exact folder structure shown in `CLAUDE.md`
+   - Ensure proper .gitkeep files and .gitignore
+
+3. **Create configuration files**:
+   - `.env.example` with all 5 provider API key templates
+   - `config.yaml` with sensible defaults
+   - `.gitignore` for Python projects
+
+4. **Start with Phase 1** (Foundation):
+   - Implement `src/utils/file_processor.py` to extract text from PDF, DOCX, TXT, CSV, XLSX, PPTX
+   - Implement `src/utils/token_counter.py` with provider-specific tokenization
+   - Create basic config loading and validation
+
+## 🎨 Implementation Guidelines
+
+**Follow these principles:**
+- **Quality over speed**: Take time to implement correctly
+- **Error handling**: Every function should have comprehensive error handling with clear messages
+- **Type hints**: Use Python type hints for all function signatures
+- **Docstrings**: Add docstrings to all classes and functions
+- **Modularity**: Keep functions small and focused
+- **Testing mindset**: Think about how each component will be tested
+
+**Development approach:**
+- Start with the simplest working version
+- Test each component as you build it
+- Use Google Gemini (free tier) as the default LLM provider
+- Follow the phase-by-phase approach in `instructions.txt`
+
+## ⚠️ Critical Implementation Notes
+
+1. **Provider Limits**: Hardcode the token limits from `fine_tunable_llms_research.md` into each provider class
+2. **Conversation Detection**: Use regex patterns first, AI fallback for ambiguous cases
+3. **Token Counting**: Different providers need different tokenization strategies
+4. **Security**: Never hardcode API keys; always use environment variables
+5. **File Processing**: Stream large files; don't load entire files into memory
+
+## 📊 Success Criteria
+
+By the end of Phase 1, you should have:
+- ✅ Complete directory structure
+- ✅ Working file processor for all formats
+- ✅ Token counting working for at least one provider (Google)
+- ✅ Config system loading and validating
+- ✅ Basic error handling in place
+
+## 💬 Communication Style
+
+As you work:
+- **Show your thinking**: Explain major decisions
+- **Ask questions**: If anything is unclear, ask before implementing
+- **Share progress**: Update me as you complete each component
+- **Highlight issues**: Flag any problems or concerns immediately
+
+## 🎯 Immediate Next Steps
+
+**Right now, please:**
+
+1. Confirm you've read and understood:
+   - CLAUDE.md
+   - instructions.txt  
+   - The research document
+   - The recruiter instructions
+
+2. Create the complete directory structure
+
+3. Generate `.env.example`, `config.yaml`, and `.gitignore`
+
+4. Begin implementing `src/utils/file_processor.py`
+
+## 🤝 How to Approach This
+
+Think of this as building a production-quality tool that:
+- Real developers will use to create datasets
+- Must handle edge cases gracefully
+- Should provide excellent user experience (even in CLI)
+- Needs to be maintainable and extensible
+- Must work on free tiers (budget-conscious)
+
+Remember: This system is **agentic**, meaning it should have intelligence beyond just calling LLMs. The coordination and decision-making logic is what makes it truly valuable.
+
+---
+
+**Ready? Let's build something awesome! 🚀**
+
+Please start by reading the documentation and confirming your understanding, then begin with directory structure setup.
