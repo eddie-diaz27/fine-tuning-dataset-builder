@@ -131,15 +131,27 @@ class MarkdownConverter:
         sample_blocks = content.split(self.separator)
 
         samples = []
+        failed_count = 0
+
         for block in sample_blocks:
-            if not block.strip() or block.strip().startswith('#'):
+            # Skip empty blocks or the header block (starts with single #)
+            if not block.strip():
+                continue
+            if block.strip().startswith('# Dataset Samples'):
                 continue
 
             sample = self._parse_sample_block(block, preserve_metadata)
             if sample:
                 samples.append(sample)
+            else:
+                failed_count += 1
 
-        print(f"✓ Imported {len(samples)} samples from {md_path}")
+        if failed_count > 0:
+            print(f"✓ Imported {len(samples)} samples from {md_path} "
+                  f"({failed_count} failed to parse)")
+        else:
+            print(f"✓ Imported {len(samples)} samples from {md_path}")
+
         return samples
 
     def _parse_sample_block(
@@ -194,8 +206,9 @@ class MarkdownConverter:
                     content[current_section] = '\n'.join(section_content).strip()
                 current_section = 'assistant'
                 section_content = []
-            elif current_section and not line.startswith('##') and not line.startswith('**'):
-                # Content line
+            elif current_section and not line.startswith('##'):
+                # Only skip lines that start new samples (##)
+                # Keep all other lines, including those with bold markdown
                 section_content.append(line)
 
         # Capture last section
@@ -204,6 +217,13 @@ class MarkdownConverter:
 
         # Validate content
         if not content['user'] or not content['assistant']:
+            # Extract sample number for error reporting
+            import re
+            sample_match = re.search(r'## Sample (\d+)', block)
+            sample_num = sample_match.group(1) if sample_match else "unknown"
+
+            print(f"  ⚠️  Sample {sample_num}: Missing required content "
+                  f"(user={bool(content['user'])}, assistant={bool(content['assistant'])})")
             return None
 
         # Create Sample object
@@ -309,6 +329,13 @@ class MarkdownConverter:
 
         # Import from markdown
         samples = self.import_from_markdown(md_path, preserve_metadata=True)
+
+        # Validate before overwriting
+        if not samples:
+            print(f"\n❌ Error: Failed to parse any samples from {md_path}")
+            print(f"   Original JSONL was backed up but NOT overwritten")
+            print(f"   Please check the markdown formatting and try again\n")
+            return
 
         # Format and write JSONL
         formatter = Formatter(provider)

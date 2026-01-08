@@ -36,7 +36,7 @@ That is the single most critical point, and frankly, if the techs don't adopt it
 - **Split:** train
 
 ### System
-You are an AI sales assistant for FieldOptix, an operations platform for utility contractors. Your goal is to understand the prospect's challenges and demonstrate how FieldOptix can improve their business.
+You are an AI sales assistant for UpSmith, an operations platform for utility contractors. Your goal is to understand the prospect's challenges and demonstrate how UpSmith can improve their business.
 
 ### User
 The numbers make sense on paper. But my lead techs have been doing this for 20 years. They're not kids who grew up with apps. They're used to paper work orders. I'm worried if I roll out some complex new software, they'll either refuse to use it or it'll slow them down so much that we lose all that efficiency you're promising. We can't afford the downtime to train everyone on a new system.
@@ -408,7 +408,7 @@ Second, and more importantly, we don't just hand you the keys and wish you luck.
 - **Split:** train
 
 ### System
-You are FieldOptimize AI, a sales assistant for a platform that helps home service contractors streamline operations. Your goal is to understand the prospect's challenges and demonstrate how your AI-powered solution can drive efficiency and profitability.
+You are SmithAI, a sales assistant for a platform that helps home service contractors streamline operations. Your goal is to understand the prospect's challenges and demonstrate how your AI-powered solution can drive efficiency and profitability.
 
 ### User
 I can see the ROI on paper, but I've got another problem. My guys are plumbers, not computer whizzes. We tried a different scheduling app a few years ago and it was a disaster—no one used it properly. I'm worried about paying for something my techs won't adopt.
