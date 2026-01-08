@@ -41,9 +41,9 @@ fine-tune-dataset-builder/
 │   │   ├── create_mode.txt      # Prompt for create mode agent
 │   │   ├── identify_mode.txt    # Prompt for identify mode agent
 │   │   └── hybrid_mode.txt      # Prompt for hybrid mode agent
-│   └── free_mode/               # User customization
+│   └── custom_mode/             # User customization
 │       ├── prompt.txt           # Optional user override prompt
-│       └── README.md            # Instructions for free mode
+│       └── README.md            # Instructions for custom mode
 │
 ├── memory/                       # SQLite database location
 │   └── .gitkeep
@@ -62,7 +62,7 @@ fine-tune-dataset-builder/
     │   ├── create_agent.py      # Generate synthetic conversations
     │   ├── identify_agent.py    # Extract existing conversations
     │   ├── hybrid_agent.py      # Combination of both
-    │   └── free_agent.py        # User-defined behavior
+    │   └── custom_agent.py      # User-defined behavior
     │
     ├── providers/                # LLM provider integrations
     │   ├── __init__.py
@@ -187,8 +187,8 @@ fine-tune-dataset-builder/
    - Avoid duplication
    - Ensure coherent dataset
 
-5. Implement free_agent.py:
-   - Check for prompts/free_mode/prompt.txt
+5. Implement custom_agent.py:
+   - Check for prompts/custom_mode/prompt.txt
    - If exists, use file content
    - If not, prompt user for instructions
    - Execute user-defined behavior

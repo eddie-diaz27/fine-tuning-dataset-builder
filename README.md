@@ -14,7 +14,7 @@ This tool helps you create fine-tuning datasets for popular LLM providers (OpenA
 
 ## ✨ Key Features
 
-- 🎨 **4 Generation Modes**: Create, Identify, Hybrid, Free
+- 🎨 **4 Generation Modes**: Create, Identify, Hybrid, Custom
 - 🔌 **5 LLM Providers**: OpenAI, Anthropic, Google, Mistral, Meta Llama
 - 💰 **Zero Setup**: Works with free APIs (Gemini) + local SQLite database
 - 🎯 **Smart Validation**: Ensures compliance with provider limits
@@ -112,7 +112,7 @@ Input: Sales training materials
 Output: 50% real examples + 50% generated variations
 ```
 
-#### 🎭 FREE MODE
+#### 🎭 CUSTOM MODE
 Custom behavior defined by you.
 
 **Best for:**
@@ -122,7 +122,7 @@ Custom behavior defined by you.
 
 **Example:**
 ```
-Input: Your custom prompt in prompts/free_mode/prompt.txt
+Input: Your custom prompt in prompts/custom_mode/prompt.txt
 Output: Whatever you define!
 ```
 
@@ -209,9 +209,9 @@ split:
 **Example:**
 If you have 100 samples from 4 different source files, weighted splitting ensures each file contributes equally to both train and validation sets.
 
-### Custom Prompts (Free Mode)
+### Custom Prompts (Custom Mode)
 
-Create `prompts/free_mode/prompt.txt`:
+Create `prompts/custom_mode/prompt.txt`:
 
 ```
 Generate question-answer pairs about advanced Python concepts.

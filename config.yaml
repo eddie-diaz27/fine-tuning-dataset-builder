@@ -16,11 +16,11 @@ provider: "google"
 model: "gemini-2.5-flash"
 
 # === GENERATION MODE ===
-# Options: create, identify, hybrid, free
+# Options: create, identify, hybrid, custom
 # - create: Generate synthetic conversations from source files
 # - identify: Extract existing conversations verbatim
 # - hybrid: Combination of both approaches
-# - free: User-defined behavior (custom prompts)
+# - custom: User-defined behavior (custom prompts)
 mode: "create"
 
 # === DATASET PARAMETERS ===
@@ -95,20 +95,22 @@ agent:
   
   # HYBRID MODE settings
   hybrid:
-    # Ratio of generated vs extracted examples (0.0 - 1.0)
-    # 0.5 = 50% generated, 50% extracted
-    generation_ratio: 0.5
-    
+    # DEPRECATED: generation_ratio is no longer used
+    # HYBRID mode now extracts ALL available conversations first,
+    # then fills remaining slots with synthetic generation to reach target count
+    # Example: target_samples=40, found 16 conversations → extract 16, generate 24 → total 40
+    # This ensures you always reach your target count while maximizing real conversation extraction
+
     # Ensure no duplicates between generated and extracted
     deduplicate: true
   
-  # FREE MODE settings
-  free:
+  # CUSTOM MODE settings
+  custom:
     # Use prompt file instead of interactive prompting
-    # If true, reads from prompts/free_mode/prompt.txt
+    # If true, reads from prompts/custom_mode/prompt.txt
     # If false, prompts user interactively
     use_prompt_file: true
-    
+
     # Allow advanced customization
     # Enables experimental features and complex workflows
     allow_advanced: true

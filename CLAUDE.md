@@ -47,7 +47,7 @@ fine-tune-dataset-builder/
 │   │   ├── create_mode.txt
 │   │   ├── identify_mode.txt
 │   │   └── hybrid_mode.txt
-│   └── prompts/free_mode/        # User-defined prompts
+│   └── prompts/custom_mode/      # User-defined prompts
 │       └── prompt.txt            # Optional override
 │
 └── 💻 Source Code
@@ -79,14 +79,14 @@ fine-tune-dataset-builder/
    - Best for: Mining real conversations from documentation, support logs, chat logs
 
 3. **HYBRID MODE** 🔄
-   - Combines both create and identify
-   - Extracts real examples + generates synthetic ones
-   - Configurable ratio (e.g., 50/50)
-   - Best for: Maximizing dataset size with quality
+   - Combines both create and identify with dynamic fill
+   - Extracts ALL available conversations first, then generates synthetic to reach target
+   - Example: target=40, found 16 conversations → extract 16, generate 24 → total 40
+   - Best for: Maximizing dataset size while preserving all real conversations
 
-4. **FREE MODE** 🎭
+4. **CUSTOM MODE** 🎭
    - User defines custom behavior
-   - Can load instructions from `prompts/free_mode/prompt.txt`
+   - Can load instructions from `prompts/custom_mode/prompt.txt`
    - Or prompt user interactively
    - Best for: Experimental workflows, specialized use cases
 
@@ -334,6 +334,101 @@ uv pip install -r requirements.txt  # 10-100x faster!
 4. **Quality > Quantity**: 100 great examples > 1000 mediocre ones
 5. **Provider Agnostic**: Support all 5 providers equally well
 6. **Future-Proof**: Design for web UI expansion
+
+---
+
+## 🧪 Testing
+
+### Test Structure
+```
+tests/
+├── unit/              # Unit tests for all components
+│   ├── test_config_loader.py
+│   ├── test_token_counter.py
+│   ├── test_file_processor.py
+│   ├── test_conversation_detector.py
+│   ├── test_validator.py
+│   ├── test_formatter.py
+│   ├── test_splitter.py
+│   ├── providers/     # Provider tests
+│   │   ├── test_base_provider.py
+│   │   ├── test_google_provider.py
+│   │   ├── test_openai_provider.py
+│   │   └── test_all_providers.py
+│   ├── agents/        # Agent tests
+│   │   ├── test_base_agent.py
+│   │   ├── test_create_agent.py
+│   │   ├── test_identify_agent.py
+│   │   ├── test_hybrid_agent.py
+│   │   └── test_free_agent.py
+│   └── persistence/   # Database tests
+│       ├── test_sqlite_client.py
+│       └── test_models.py
+├── integration/       # End-to-end workflow tests
+│   ├── test_create_mode_workflow.py
+│   ├── test_identify_mode_workflow.py
+│   ├── test_hybrid_mode_workflow.py
+│   └── test_full_pipeline.py
+├── test_data/         # Sample files for testing
+└── conftest.py        # Pytest fixtures
+```
+
+### Running Tests
+```bash
+# Setup virtual environment
+python -m venv venv
+source venv/bin/activate  # or venv\Scripts\activate on Windows
+pip install -r requirements.txt
+
+# Run all tests
+pytest tests/ -v
+
+# Run specific test file
+pytest tests/unit/test_config_loader.py -v
+
+# Run unit tests only
+pytest tests/unit/ -v
+
+# Run integration tests only
+pytest tests/integration/ -v
+
+# Run with coverage
+pytest tests/ --cov=src --cov-report=html
+
+# Run tests for specific module
+pytest tests/unit/providers/ -v
+```
+
+### Test Coverage Goals
+- **Config & Utilities**: 90%+ (high business logic)
+- **Providers**: 80%+
+- **Agents**: 75%+ (heavy LLM interaction, mocked)
+- **Persistence**: 85%+
+- **CLI**: 60%+ (manual testing preferred)
+
+**Overall target: 80%+ coverage**
+
+### Testing Strategy
+
+**Unit Tests:**
+- All LLM API calls are mocked to avoid costs
+- In-memory SQLite (`:memory:`) for fast database tests
+- Temporary directories (`pytest.tmp_path`) for file tests
+- Comprehensive fixtures in `conftest.py`
+
+**Integration Tests:**
+- End-to-end workflows with mocked LLM calls
+- Test complete pipeline from config to export
+- Validate JSONL output format
+- Verify database persistence
+
+**Manual Testing:**
+- Real API calls with Google Gemini (free tier)
+- Test all 4 modes (CREATE, IDENTIFY, HYBRID, FREE)
+- Test all 5 providers (with API keys)
+- Edge cases (large files, rate limits, errors)
+
+**Estimated Test Coverage: 200+ test cases**
 
 ---
 

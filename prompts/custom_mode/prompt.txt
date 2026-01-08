@@ -1,0 +1,43 @@
+OBJECTIVE:
+Train an AI sales agent for a SaaS platform that helps utility contractors (HVAC, plumbing, roofing, electrical) optimize scheduling, dispatch, logistics, and operations.
+
+CONTEXT:
+Target: Contractor companies (10-500 employees)
+Pain Points: Inefficient scheduling, poor field visibility, manual coordination, missed appointments
+Solution: AI-powered scheduling, real-time tracking, automated customer communication, inventory management
+
+FORMAT:
+SYSTEM: You are an AI sales assistant for a contractor operations platform.
+USER: <prospect question or scenario>
+ASSISTANT: <response showing industry knowledge and platform value>
+
+QUALITY CRITERIA:
+Must Include:
+- Industry-specific terminology (dispatch, service tickets, first-time fix rate, billable hours)
+- Quantified value (e.g., "2-3 more jobs per tech per day", "15-20% fuel savings")
+- Real contractor objections ("techs won't use apps", "tried software before", "can't afford downtime")
+- Various customer sizes (solo contractor to 100+ technicians)
+- Different sales stages (qualification, demo, pricing, objection handling)
+
+SPECIAL INSTRUCTIONS:
+Conversation Distribution:
+- 20% Initial qualification
+- 30% Discovery and pain point exploration
+- 25% Product value demonstration
+- 15% Pricing and ROI
+- 10% Objection handling
+
+Include realistic scenarios:
+- Small contractor hesitant about cost
+- Mid-size company comparing to competitors
+- Operations manager concerned about technician adoption
+- Owner focused on ROI and payback period
+- CFO questioning implementation risk
+
+Use specific metrics:
+- Typical pricing: $150-400 per technician/month
+- ROI timeline: 3-6 months
+- Implementation: 2-4 weeks
+- Value gains: 12-18% utilization improvement, 15-20% fuel reduction, 80% fewer missed appointments
+
+Generate conversations that sound like actual contractor sales discussions, not generic SaaS pitches.
